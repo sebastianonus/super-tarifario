@@ -73,9 +73,14 @@
   }
 
   .grid.w-full.grid-cols-4.mb-6 {
+    height: auto;
+    min-height: 0;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.5rem;
     margin-bottom: 1rem;
+    padding: 0.35rem;
+    border-radius: 1rem;
+    background: rgb(var(--muted));
   }
 
   .grid.w-full.grid-cols-4.mb-6 > * {
@@ -90,6 +95,11 @@
     overflow-wrap: anywhere;
     word-break: break-word;
     line-height: 1.2;
+  }
+
+  .grid.w-full.grid-cols-4.mb-6 .h-\[calc\(100\%-1px\)\] {
+    height: auto;
+    min-height: 4.25rem;
   }
 
   .grid.grid-cols-2.gap-4 {
@@ -239,6 +249,7 @@
   }
 
   .grid.w-full.grid-cols-4.mb-6 {
+    height: auto;
     grid-template-columns: 1fr;
   }
 
