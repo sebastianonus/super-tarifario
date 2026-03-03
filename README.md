@@ -1,22 +1,19 @@
 ## Super Tarifario ONUS Express
 
-Reconstruccion auditada en React + Vite a partir de dos HTML autonomos:
+Despliegue estatico orientado a publicar los dos HTML autonomos sin paneles extra.
+
+### Rutas publicas
+
+- `/` abre directamente el tarifario por item
+- `/item` abre el tarifario por item
+- `/modulo` abre el tarifario por modulo
+
+### Fuente funcional
 
 - `Tarifario-por-item.html`
 - `Tarifario-por-modulo.html`
 
-### Hallazgos de la auditoria
-
-- El proyecto tenia `package.json` y `vite.config.ts`, pero no conservaba `src/`.
-- El build existente era una compilacion no mantenible.
-- `Tarifario-ONUS-Express-2026-local-v3.html` estaba vacio.
-- Los dos HTML autonomos siguen siendo la fuente funcional mas fiable.
-
-### Estructura actual
-
-- La app React vive en `src/`.
-- Los HTML autonomos se publican desde `public/tarifarios/`.
-- La UI React actua como contenedor movil y de escritorio.
+Los archivos publicados viven en `public/tarifarios/`.
 
 ### Desarrollo
 
@@ -31,11 +28,10 @@ npm run dev
 npm run build
 ```
 
-### Despliegue en Vercel
+### Vercel
 
-Vercel detecta Vite automaticamente. Configura:
+Configurado mediante `vercel.json` para servir:
 
-- Build Command: `npm run build`
-- Output Directory: `dist`
-
-No se necesita backend.
+- raiz -> `tarifarios/item.html`
+- `/item` -> `tarifarios/item.html`
+- `/modulo` -> `tarifarios/modulo.html`
