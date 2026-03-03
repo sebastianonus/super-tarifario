@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Super Tarifario ONUS Express</title>
+    <title></title>
     <style>
       @import url("https://fonts.googleapis.com/css2?family=Raleway:wght@600;700;800&display=swap");
 
@@ -93,12 +93,13 @@
   </head>
   <body>
     <main>
-      <h1>Super Tarifario</h1>
-      <p>Selecciona el formato que quieres abrir.</p>
-      <nav aria-label="Selector de tarifario">
-        <a class="item" href="/item">Tarifario por item</a>
-        <a class="modulo" href="/modulo">Tarifario por modulo</a>
+      <h1 id="landing-title"></h1>
+      <p id="landing-subtitle"></p>
+      <nav id="landing-nav" aria-label="">
+        <a id="landing-item-link" class="item" href="/item"></a>
+        <a id="landing-modulo-link" class="modulo" href="/modulo"></a>
       </nav>
     </main>
+    <script type="module" src="/src/landing.ts"></script>
   </body>
 </html>
