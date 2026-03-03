@@ -7,10 +7,6 @@
   "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/",
-      "destination": "/tarifarios/item.html"
-    },
-    {
       "source": "/item",
       "destination": "/tarifarios/item.html"
     },
