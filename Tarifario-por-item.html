@@ -154,7 +154,22 @@
   }
 
   .overflow-x-auto {
-    overflow-x: visible;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    padding-bottom: 0.35rem;
+  }
+
+  .overflow-x-auto > [data-slot="table"] {
+    min-width: max-content;
+  }
+
+  .overflow-x-auto .truncate,
+  .overflow-x-auto .whitespace-nowrap {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .grid.grid-cols-12.gap-2.items-center.py-2.text-xs.border-b {
