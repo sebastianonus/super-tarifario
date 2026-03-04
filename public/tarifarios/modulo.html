@@ -1066,16 +1066,12 @@ PERFORMANCE OF THIS SOFTWARE.
           return wrap;
         }
 
-        function buildModuleSectionNode(item, baseWidth, exportItems) {
+        function buildModuleSectionNode(item, baseWidth) {
           var section = document.createElement("div");
           section.style.width = Math.ceil(baseWidth || item.width || 1100) + "px";
           section.style.background = "#fff";
           section.style.boxSizing = "border-box";
           section.style.paddingBottom = "4px";
-
-          var repeatedHeader = buildExportHeaderNode(exportItems || [item]);
-          repeatedHeader.style.margin = "0 0 10px 0";
-          section.appendChild(repeatedHeader);
 
           var title = document.createElement("div");
           title.textContent = item.label;
@@ -1123,6 +1119,25 @@ PERFORMANCE OF THIS SOFTWARE.
 
           section.appendChild(moduleClone);
           return section;
+        }
+
+        function createExportPageNode(baseWidth, exportItems) {
+          var page = document.createElement("div");
+          page.style.width = Math.ceil(baseWidth || 1100) + "px";
+          page.style.background = "#fff";
+          page.style.boxSizing = "border-box";
+          page.style.overflow = "hidden";
+
+          var header = buildExportHeaderNode(exportItems || []);
+          header.style.margin = "0 0 10px 0";
+          page.appendChild(header);
+
+          var body = document.createElement("div");
+          body.style.width = "100%";
+          body.style.boxSizing = "border-box";
+          page.appendChild(body);
+
+          return { page: page, body: body };
         }
         async function captureNodeCanvas(node, widthPx) {
           var surface = document.createElement("div");
@@ -1182,37 +1197,57 @@ PERFORMANCE OF THIS SOFTWARE.
           var marginBottom = 20;
           var contentWidth = pdfWidth - marginX * 2;
           var usableHeight = pdfHeight - marginTop - marginBottom;
-          var cursorY = marginTop;
           var baseCaptureWidth = Math.max(
             exportItems.reduce(function (m, it) { return Math.max(m, Math.ceil(it.width || 0)); }, 0),
             1120
           );
+          var maxPageHeightPx = Math.round(baseCaptureWidth * (usableHeight / contentWidth));
+          var host = document.createElement("div");
+          host.style.position = "fixed";
+          host.style.left = "-100000px";
+          host.style.top = "0";
+          host.style.width = Math.ceil(baseCaptureWidth) + "px";
+          host.style.pointerEvents = "none";
+          host.style.opacity = "0";
+          host.style.background = "#fff";
+          document.body.appendChild(host);
 
-          async function addCanvasAsBlock(canvas, gapAfter) {
-            var imgWidth = contentWidth;
-            var imgHeight = (canvas.height * imgWidth) / canvas.width;
+          try {
+            var pages = [];
+            var current = createExportPageNode(baseCaptureWidth, exportItems);
+            host.appendChild(current.page);
+            pages.push(current.page);
 
-            if (imgHeight > usableHeight) {
-              var down = usableHeight / imgHeight;
-              imgWidth = imgWidth * down;
-              imgHeight = imgHeight * down;
+            for (var i = 0; i < exportItems.length; i++) {
+              var sectionNode = buildModuleSectionNode(exportItems[i], baseCaptureWidth);
+              current.body.appendChild(sectionNode);
+
+              if (current.page.scrollHeight > maxPageHeightPx) {
+                current.body.removeChild(sectionNode);
+                if (current.body.children.length > 0) {
+                  current = createExportPageNode(baseCaptureWidth, exportItems);
+                  host.appendChild(current.page);
+                  pages.push(current.page);
+                }
+                current.body.appendChild(sectionNode);
+              }
             }
 
-            if (cursorY + imgHeight > pdfHeight - marginBottom) {
-              pdf.addPage();
-              cursorY = marginTop;
+            for (var pageIndex = 0; pageIndex < pages.length; pageIndex++) {
+              var pageCanvas = await captureNodeCanvas(pages[pageIndex].cloneNode(true), baseCaptureWidth);
+              var imgWidth = contentWidth;
+              var imgHeight = (pageCanvas.height * imgWidth) / pageCanvas.width;
+              if (imgHeight > usableHeight) {
+                var down = usableHeight / imgHeight;
+                imgWidth = imgWidth * down;
+                imgHeight = imgHeight * down;
+              }
+              if (pageIndex > 0) pdf.addPage();
+              var x = marginX + (contentWidth - imgWidth) / 2;
+              pdf.addImage(pageCanvas.toDataURL("image/png"), "PNG", x, marginTop, imgWidth, imgHeight);
             }
-
-            var x = marginX + (contentWidth - imgWidth) / 2;
-            var imgData = canvas.toDataURL("image/png");
-            pdf.addImage(imgData, "PNG", x, cursorY, imgWidth, imgHeight);
-            cursorY += imgHeight + (gapAfter || 0);
-          }
-
-          for (var i = 0; i < exportItems.length; i++) {
-            var sectionNode = buildModuleSectionNode(exportItems[i], baseCaptureWidth, exportItems);
-            var sectionCanvas = await captureNodeCanvas(sectionNode, baseCaptureWidth);
-            await addCanvasAsBlock(sectionCanvas, i < exportItems.length - 1 ? 10 : 0);
+          } finally {
+            host.remove();
           }
 
           pdf.save(fileName);
