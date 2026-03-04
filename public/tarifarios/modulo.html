@@ -1326,6 +1326,54 @@ PERFORMANCE OF THIS SOFTWARE.
       }
     })();
   </script>
+  <style id="back-to-selector-style">
+    .back-to-selector-link {
+      position: fixed;
+      top: 1rem;
+      left: 1rem;
+      z-index: 55;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.75rem 1rem;
+      border-radius: 999px;
+      border: 1px solid rgba(0, 9, 53, 0.14);
+      background: rgba(255, 255, 255, 0.94);
+      color: #000935;
+      text-decoration: none;
+      font-family: "Raleway", "Segoe UI", sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      box-shadow: 0 0.75rem 1.8rem rgba(15, 31, 58, 0.12);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    .back-to-selector-link:hover {
+      background: #ffffff;
+    }
+
+    @media (max-width: 900px) {
+      .back-to-selector-link {
+        position: sticky;
+        top: 0.5rem;
+        left: auto;
+        margin: 0.5rem 0.5rem 0;
+      }
+    }
+  </style>
+  <script>
+    (function () {
+      if (document.getElementById("back-to-selector-link")) return;
+      var link = document.createElement("a");
+      link.id = "back-to-selector-link";
+      link.className = "back-to-selector-link";
+      link.href = "/";
+      link.setAttribute("aria-label", "Volver a la seleccion de tarifario");
+      link.textContent = "Atras";
+      document.body.appendChild(link);
+    })();
+  </script>
 </body>
 </html>
 
