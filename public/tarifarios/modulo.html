@@ -1029,6 +1029,14 @@ PERFORMANCE OF THIS SOFTWARE.
 
           var liveHeader = findLiveHeaderNode() || findHeaderFallbackFromLayout();
           if (liveHeader) {
+            Array.prototype.slice.call(liveHeader.querySelectorAll("img")).forEach(function (img, idx) {
+              var alt = ((img.getAttribute("alt") || "") + "").toLowerCase();
+              var isClientLogo = alt.indexOf("logo del cliente") !== -1 || alt.indexOf("cliente") !== -1 || (idx > 0 && liveHeader.querySelectorAll("img").length > 1);
+              if (!isClientLogo) return;
+              img.style.filter = "brightness(0) invert(1)";
+              img.style.webkitFilter = "brightness(0) invert(1)";
+              img.style.opacity = "1";
+            });
             wrap.appendChild(liveHeader);
           } else {
             var top = document.createElement("div");
@@ -1097,16 +1105,16 @@ PERFORMANCE OF THIS SOFTWARE.
             });
           });
 
-          Array.prototype.slice.call(moduleClone.querySelectorAll("div")).forEach(function (block) {
-            if (!block || block.getAttribute("data-slot") === "card-header") return;
-            var titleEl = block.querySelector("h3, h4");
+          Array.prototype.slice.call(moduleClone.querySelectorAll("h3, h4")).forEach(function (titleEl) {
             if (!titleEl) return;
             var titleText = (titleEl.textContent || "").replace(/\s+/g, " ").trim().toLowerCase();
             if (titleText !== "condiciones del servicio" && titleText !== "notas") return;
-            block.style.backgroundColor = titleText === "notas" ? "#00C9CE" : "#000935";
-            block.style.color = "#ffffff";
+            var headerBlock = titleEl.closest("div") || titleEl.parentElement;
+            if (!headerBlock || headerBlock.getAttribute("data-slot") === "card-header") return;
+            headerBlock.style.backgroundColor = titleText === "notas" ? "#00C9CE" : "#000935";
+            headerBlock.style.color = "#ffffff";
             titleEl.style.color = "#ffffff";
-            Array.prototype.slice.call(block.querySelectorAll("*")).forEach(function (child) {
+            Array.prototype.slice.call(headerBlock.querySelectorAll("*")).forEach(function (child) {
               child.style.color = "#ffffff";
               child.style.fill = "#ffffff";
               child.style.stroke = "#ffffff";
