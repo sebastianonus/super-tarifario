@@ -975,6 +975,7 @@ PERFORMANCE OF THIS SOFTWARE.
           var nodes = Array.prototype.slice.call(document.querySelectorAll("header, div"));
           var candidates = nodes.filter(function (el) {
             if (!el || !el.getClientRects || el.getClientRects().length === 0) return false;
+            if (el.closest('[data-export-generated="true"]')) return false;
             var txt = (el.textContent || "").replace(/\s+/g, " ").trim().toUpperCase();
             if (txt.indexOf(titleNeedle) === -1) return false;
             var r = el.getBoundingClientRect();
@@ -1002,6 +1003,7 @@ PERFORMANCE OF THIS SOFTWARE.
         function findHeaderFallbackFromLayout() {
           var page = findPageContainer();
           if (!page) return null;
+          if (page.closest('[data-export-generated="true"]')) return null;
           var first = page.firstElementChild;
           if (!first) return null;
           var r = first.getBoundingClientRect ? first.getBoundingClientRect() : null;
@@ -1021,6 +1023,7 @@ PERFORMANCE OF THIS SOFTWARE.
           var docType = getSelectedDocumentType();
 
           var wrap = document.createElement("div");
+          wrap.setAttribute("data-export-generated", "true");
           wrap.style.width = "100%";
           wrap.style.background = "#ffffff";
           wrap.style.border = "1px solid #E5E7EB";
@@ -1123,6 +1126,7 @@ PERFORMANCE OF THIS SOFTWARE.
 
         function createExportPageNode(baseWidth, exportItems) {
           var page = document.createElement("div");
+          page.setAttribute("data-export-generated", "true");
           page.style.width = Math.ceil(baseWidth || 1100) + "px";
           page.style.background = "#fff";
           page.style.boxSizing = "border-box";
@@ -1203,6 +1207,7 @@ PERFORMANCE OF THIS SOFTWARE.
           );
           var maxPageHeightPx = Math.round(baseCaptureWidth * (usableHeight / contentWidth));
           var host = document.createElement("div");
+          host.setAttribute("data-export-generated", "true");
           host.style.position = "fixed";
           host.style.left = "-100000px";
           host.style.top = "0";
