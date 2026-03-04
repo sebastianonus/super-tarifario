@@ -1097,6 +1097,22 @@ PERFORMANCE OF THIS SOFTWARE.
             });
           });
 
+          Array.prototype.slice.call(moduleClone.querySelectorAll("div")).forEach(function (block) {
+            if (!block || block.getAttribute("data-slot") === "card-header") return;
+            var titleEl = block.querySelector("h3, h4");
+            if (!titleEl) return;
+            var titleText = (titleEl.textContent || "").replace(/\s+/g, " ").trim().toLowerCase();
+            if (titleText !== "condiciones del servicio" && titleText !== "notas") return;
+            block.style.backgroundColor = titleText === "notas" ? "#00C9CE" : "#000935";
+            block.style.color = "#ffffff";
+            titleEl.style.color = "#ffffff";
+            Array.prototype.slice.call(block.querySelectorAll("*")).forEach(function (child) {
+              child.style.color = "#ffffff";
+              child.style.fill = "#ffffff";
+              child.style.stroke = "#ffffff";
+            });
+          });
+
           section.appendChild(moduleClone);
           return section;
         }
