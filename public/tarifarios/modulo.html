@@ -640,6 +640,16 @@ PERFORMANCE OF THIS SOFTWARE.
         var FILE_PREFIX = "tarifario-onus-express-2026";
         var selectedKeys = [];
         var selectedByKey = {};
+        var EXPORT_MIN_CAPTURE_WIDTH = 980;
+        var EXPORT_TEXT_SIZES = {
+          sectionTitle: "14px",
+          cardHeader: "14px",
+          cardSubheader: "13px",
+          tableHeader: "13px",
+          body: "13px",
+          detail: "12px",
+          finePrint: "11px"
+        };
 
         function slugify(text) {
           return (text || "")
@@ -892,6 +902,31 @@ PERFORMANCE OF THIS SOFTWARE.
           return body.indexOf("nota para el pdf") !== -1;
         }
 
+        function isAjustesPanel(card) {
+          if (!card) return false;
+          var title = getCardLabelForExport(card).toLowerCase();
+          if (title.indexOf("ajustes personalizados") !== -1) return true;
+          var body = (card.textContent || "").replace(/\s+/g, " ").toLowerCase();
+          return body.indexOf("concepto del ajuste") !== -1 && body.indexOf("porcentaje") !== -1;
+        }
+
+        function getAjustesCardNode() {
+          var byConceptInput = document.getElementById("ajusteConcepto");
+          if (byConceptInput) {
+            var conceptCard = byConceptInput.closest('[data-slot="card"]');
+            if (conceptCard) return conceptCard;
+          }
+
+          var byValueInput = document.getElementById("ajusteValor");
+          if (byValueInput) {
+            var valueCard = byValueInput.closest('[data-slot="card"]');
+            if (valueCard) return valueCard;
+          }
+
+          var cards = Array.prototype.slice.call(document.querySelectorAll('[data-slot="card"]'));
+          return cards.find(function (card) { return isAjustesPanel(card); }) || null;
+        }
+
         function cardHasAnyUsedField(card) {
           if (!card) return false;
           var fields = Array.prototype.slice.call(card.querySelectorAll("textarea, input, select"));
@@ -913,6 +948,23 @@ PERFORMANCE OF THIS SOFTWARE.
             }
           });
           return cloneCard;
+        }
+
+        function getAdjustmentsSnapshotsForExport() {
+          var ajustesCard = getAjustesCardNode();
+          if (!ajustesCard) return [];
+
+          var snapshots = [];
+          snapshots.push({
+            key: "adjustments::0",
+            tab: "ajustes",
+            module: "ajustes-personalizados",
+            label: "Ajustes Personalizados",
+            width: Math.ceil(ajustesCard.getBoundingClientRect().width || 920),
+            clone: cloneWithLiveFormValues(ajustesCard)
+          });
+
+          return snapshots;
         }
 
         function getNotesSnapshotsForExport() {
@@ -1071,14 +1123,14 @@ PERFORMANCE OF THIS SOFTWARE.
 
         function buildModuleSectionNode(item, baseWidth) {
           var section = document.createElement("div");
-          section.style.width = Math.ceil(baseWidth || item.width || 1100) + "px";
+          section.style.width = Math.ceil(baseWidth || item.width || EXPORT_MIN_CAPTURE_WIDTH) + "px";
           section.style.background = "#fff";
           section.style.boxSizing = "border-box";
           section.style.paddingBottom = "4px";
 
           var title = document.createElement("div");
           title.textContent = item.label;
-          title.style.fontSize = "13px";
+          title.style.fontSize = EXPORT_TEXT_SIZES.sectionTitle;
           title.style.fontWeight = "700";
           title.style.color = "#111827";
           title.style.margin = "0 0 8px 0";
@@ -1104,6 +1156,48 @@ PERFORMANCE OF THIS SOFTWARE.
             });
           });
 
+          Array.prototype.slice.call(moduleClone.querySelectorAll('[data-slot="card-header"] [data-slot="card-title"], [data-slot="card-header"] h3, [data-slot="card-header"] h4')).forEach(function (headingEl) {
+            headingEl.style.fontSize = EXPORT_TEXT_SIZES.cardHeader;
+            headingEl.style.lineHeight = "1.35";
+            headingEl.style.fontWeight = "700";
+          });
+
+          Array.prototype.slice.call(moduleClone.querySelectorAll('[data-slot="table"]')).forEach(function (tableEl) {
+            tableEl.style.fontSize = EXPORT_TEXT_SIZES.body;
+            tableEl.style.lineHeight = "1.4";
+          });
+
+          Array.prototype.slice.call(moduleClone.querySelectorAll('[data-slot="table-head"]')).forEach(function (headEl) {
+            headEl.style.fontSize = EXPORT_TEXT_SIZES.tableHeader;
+            headEl.style.lineHeight = "1.35";
+            headEl.style.fontWeight = "600";
+          });
+
+          Array.prototype.slice.call(moduleClone.querySelectorAll('.text-\\[9px\\], .text-\\[10px\\]')).forEach(function (el) {
+            el.style.fontSize = EXPORT_TEXT_SIZES.finePrint;
+            el.style.lineHeight = "1.35";
+          });
+
+          Array.prototype.slice.call(moduleClone.querySelectorAll(".text-xs")).forEach(function (el) {
+            el.style.fontSize = EXPORT_TEXT_SIZES.detail;
+            el.style.lineHeight = "1.4";
+          });
+
+          Array.prototype.slice.call(moduleClone.querySelectorAll(".text-sm")).forEach(function (el) {
+            el.style.fontSize = EXPORT_TEXT_SIZES.body;
+            el.style.lineHeight = "1.45";
+          });
+
+          Array.prototype.slice.call(moduleClone.querySelectorAll('[data-slot="card-content"] p, [data-slot="card-content"] li, [data-slot="card-content"] label, [data-slot="card-content"] td, [data-slot="card-content"] th')).forEach(function (textEl) {
+            textEl.style.fontSize = EXPORT_TEXT_SIZES.body;
+            textEl.style.lineHeight = "1.45";
+          });
+
+          Array.prototype.slice.call(moduleClone.querySelectorAll("input, textarea, select")).forEach(function (fieldEl) {
+            fieldEl.style.fontSize = EXPORT_TEXT_SIZES.detail;
+            fieldEl.style.lineHeight = "1.35";
+          });
+
           Array.prototype.slice.call(moduleClone.querySelectorAll("h3, h4")).forEach(function (titleEl) {
             if (!titleEl) return;
             var titleText = (titleEl.textContent || "").replace(/\s+/g, " ").trim().toLowerCase();
@@ -1113,6 +1207,7 @@ PERFORMANCE OF THIS SOFTWARE.
             headerBlock.style.backgroundColor = titleText === "notas" ? "#00C9CE" : "#000935";
             headerBlock.style.color = "#ffffff";
             titleEl.style.color = "#ffffff";
+            titleEl.style.fontSize = EXPORT_TEXT_SIZES.cardSubheader;
             Array.prototype.slice.call(headerBlock.querySelectorAll("*")).forEach(function (child) {
               child.style.color = "#ffffff";
               child.style.fill = "#ffffff";
@@ -1127,7 +1222,7 @@ PERFORMANCE OF THIS SOFTWARE.
         function createExportPageNode(baseWidth, exportItems) {
           var page = document.createElement("div");
           page.setAttribute("data-export-generated", "true");
-          page.style.width = Math.ceil(baseWidth || 1100) + "px";
+          page.style.width = Math.ceil(baseWidth || EXPORT_MIN_CAPTURE_WIDTH) + "px";
           page.style.background = "#fff";
           page.style.boxSizing = "border-box";
           page.style.overflow = "hidden";
@@ -1174,8 +1269,9 @@ PERFORMANCE OF THIS SOFTWARE.
 
         async function exportSelectedModules() {
           var items = getSelectedSnapshotsInOrder();
+          var adjustmentsItems = getAdjustmentsSnapshotsForExport();
           var notesItems = getNotesSnapshotsForExport();
-          var exportItems = items.concat(notesItems);
+          var exportItems = items.concat(adjustmentsItems, notesItems);
           if (!items.length) {
             alert("Selecciona primero al menos un modulo para exportar.");
             return;
@@ -1203,7 +1299,7 @@ PERFORMANCE OF THIS SOFTWARE.
           var usableHeight = pdfHeight - marginTop - marginBottom;
           var baseCaptureWidth = Math.max(
             exportItems.reduce(function (m, it) { return Math.max(m, Math.ceil(it.width || 0)); }, 0),
-            1120
+            EXPORT_MIN_CAPTURE_WIDTH
           );
           var maxPageHeightPx = Math.round(baseCaptureWidth * (usableHeight / contentWidth));
           var host = document.createElement("div");
