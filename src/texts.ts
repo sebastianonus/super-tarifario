@@ -1,5 +1,9 @@
 export const texts = {
   metaTitle: "Super Tarifario ONUS Express",
+  routes: {
+    item: "item",
+    modulo: "modulo",
+  },
   landing: {
     title: "Super Tarifario",
     subtitle: "Selecciona el formato que quieres abrir.",

@@ -675,8 +675,11 @@ PERFORMANCE OF THIS SOFTWARE.
       var link = document.createElement("a");
       link.id = "back-to-selector-link";
       link.className = "back-to-selector-link";
-      link.href = "/";
-      link.setAttribute("aria-label", "Volver a la seleccion de tarifario");
+
+      var selectorUrl = new URL("../../", window.location.href);
+      link.href = selectorUrl.href;
+
+      link.setAttribute("aria-label", "Volver al selector de tarifario");
       link.textContent = "Atras";
       document.body.appendChild(link);
     })();
