@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
   <head>
   <meta charset="UTF-8" />
@@ -682,6 +682,365 @@ PERFORMANCE OF THIS SOFTWARE.
       link.setAttribute("aria-label", "Volver al selector de tarifario");
       link.textContent = "Atras";
       document.body.appendChild(link);
+    })();
+  </script>
+  
+  <style id="item-touch-feedback-style">
+    .item-touch-feedback {
+      background: rgba(0, 201, 206, 0.24) !important;
+      box-shadow: inset 0 0 0 1px rgba(0, 201, 206, 0.62);
+      transition:
+        background-color 120ms ease,
+        box-shadow 120ms ease,
+        filter 120ms ease;
+    }
+
+    .item-touch-feedback--pressed {
+      filter: brightness(0.97);
+    }
+  </style>
+  <script id="item-touch-feedback-script">
+    (function () {
+      if (window.__itemTouchFeedbackReady) return;
+      window.__itemTouchFeedbackReady = true;
+
+      var ACTIVE_CLASS = "item-touch-feedback";
+      var PRESSED_CLASS = "item-touch-feedback--pressed";
+      var CLICKABLE_SELECTOR = ".table-cell.cursor-pointer, [data-slot='table-cell'].cursor-pointer, td.cursor-pointer, .cursor-pointer";
+      var PRESSED_MS = 170;
+      var ACTIVE_MS = 520;
+      var activeTimers = new WeakMap();
+      var pressedTimers = new WeakMap();
+
+      function clearTimer(store, element) {
+        var timer = store.get(element);
+        if (!timer) return;
+        clearTimeout(timer);
+        store.delete(element);
+      }
+
+      function setTemporaryClass(store, element, className, duration) {
+        clearTimer(store, element);
+        element.classList.add(className);
+        var timer = setTimeout(function () {
+          element.classList.remove(className);
+          store.delete(element);
+        }, duration);
+        store.set(element, timer);
+      }
+
+      function getClickableTarget(target) {
+        if (!target || !(target instanceof Element)) return null;
+        var element = target.closest(CLICKABLE_SELECTOR);
+        if (!element) return null;
+        if (element.closest("[aria-disabled='true'], [disabled], .pointer-events-none")) {
+          return null;
+        }
+        return element;
+      }
+
+      document.addEventListener(
+        "pointerdown",
+        function (event) {
+          var element = getClickableTarget(event.target);
+          if (!element) return;
+          setTemporaryClass(pressedTimers, element, PRESSED_CLASS, PRESSED_MS);
+        },
+        true
+      );
+
+      document.addEventListener(
+        "click",
+        function (event) {
+          var element = getClickableTarget(event.target);
+          if (!element) return;
+          setTemporaryClass(activeTimers, element, ACTIVE_CLASS, ACTIVE_MS);
+        },
+        true
+      );
+    })();
+  </script>
+  <style id="criteria-inline-edit-style">
+    [data-criteria-editable="1"] {
+      cursor: text;
+      border-bottom: 1px dashed rgba(0, 201, 206, 0.85);
+      padding-bottom: 1px;
+    }
+
+    [data-criteria-editable="1"]:focus {
+      outline: 1px solid rgba(0, 201, 206, 0.75);
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.95);
+    }
+  </style>
+  <script id="criteria-inline-edit-script">
+    (function () {
+      if (window.__criteriaInlineEditReady) return;
+      window.__criteriaInlineEditReady = true;
+
+      var editedCriteria = new Map();
+      var refreshTimer = null;
+
+      function normalizeText(value) {
+        return String(value || "").replace(/\s+/g, " ").trim();
+      }
+
+      function isBefore(a, b) {
+        if (!a || !b || typeof a.compareDocumentPosition !== "function") return false;
+        return !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+      }
+
+      function hasEditableRows(container) {
+        if (!container || typeof container.querySelectorAll !== "function") return false;
+        var inputs = container.querySelectorAll("input, select, textarea");
+        if (!inputs.length) return false;
+        for (var i = 0; i < inputs.length; i += 1) {
+          if (!inputs[i].closest("button, [role='button']")) return true;
+        }
+        return false;
+      }
+
+      function findSelectedCardRoot() {
+        var candidates = document.querySelectorAll("h1, h2, h3, h4, div, p, span, label, strong");
+        for (var i = 0; i < candidates.length; i += 1) {
+          var node = candidates[i];
+          if (normalizeText(node.textContent) !== "Servicios Seleccionados") continue;
+
+          var card = node.closest('[data-slot="card"]');
+          while (card) {
+            if (hasEditableRows(card)) return card;
+            var parent = card.parentElement;
+            card = parent ? parent.closest('[data-slot="card"]') : null;
+          }
+
+          var root = node.parentElement;
+          while (root && root !== document.body) {
+            if (hasEditableRows(root)) return root;
+            root = root.parentElement;
+          }
+        }
+        return null;
+      }
+
+      function getRowCandidates(panel) {
+        var rows = [];
+        var seen = new Set();
+
+        function addRow(row) {
+          if (!row || row === panel || seen.has(row)) return;
+          var fields = row.querySelectorAll("input, select, textarea");
+          if (!fields.length || fields.length > 4) return;
+          seen.add(row);
+          rows.push(row);
+        }
+
+        var removeNodes = panel.querySelectorAll("button, [role='button'], span, div");
+        for (var i = 0; i < removeNodes.length; i += 1) {
+          var node = removeNodes[i];
+          if (node.childElementCount > 0) continue;
+          var text = normalizeText(node.textContent);
+          if (text !== "x" && text !== "X" && text.charCodeAt(0) !== 215) continue;
+
+          var row = node.parentElement;
+          while (row && row !== panel) {
+            if (row.querySelector("input, select, textarea")) {
+              addRow(row);
+              break;
+            }
+            row = row.parentElement;
+          }
+        }
+
+        var fields = panel.querySelectorAll("input, select, textarea");
+        for (var j = 0; j < fields.length; j += 1) {
+          var input = fields[j];
+          var candidate = input.parentElement;
+          while (candidate && candidate !== panel) {
+            var firstInput = candidate.querySelector("input, select, textarea");
+            if (firstInput) {
+              var leafs = collectLeafTextNodes(candidate, firstInput);
+              if (leafs.length) {
+                addRow(candidate);
+                break;
+              }
+            }
+            candidate = candidate.parentElement;
+          }
+        }
+
+        rows.sort(function (a, b) {
+          if (a === b) return 0;
+          return isBefore(a, b) ? -1 : 1;
+        });
+
+        return rows;
+      }
+
+      function collectLeafTextNodes(row, firstInput) {
+        var nodes = row.querySelectorAll("span, p, div, small, strong, label");
+        var output = [];
+
+        for (var i = 0; i < nodes.length; i += 1) {
+          var node = nodes[i];
+          if (node.childElementCount > 0) continue;
+          if (node.closest("button, [role='button']")) continue;
+
+          var text = normalizeText(node.textContent);
+          if (!text) continue;
+          if (text === "x" || text === "X" || text.charCodeAt(0) === 215) continue;
+          if (firstInput && !isBefore(node, firstInput)) continue;
+
+          output.push(node);
+        }
+
+        return output;
+      }
+
+      function bindEditableText(textEl, editableTitle) {
+        if (textEl.dataset.criteriaEditableBound === "1") return;
+
+        textEl.dataset.criteriaEditableBound = "1";
+        textEl.setAttribute("data-criteria-editable", "1");
+        textEl.setAttribute("contenteditable", "true");
+        textEl.setAttribute("spellcheck", "false");
+        textEl.setAttribute("title", editableTitle || "Clic para editar");
+
+        textEl.addEventListener("focus", function () {
+          this.dataset.previousValue = normalizeText(this.textContent);
+        });
+
+        textEl.addEventListener("keydown", function (event) {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            this.blur();
+            return;
+          }
+
+          if (event.key === "Escape") {
+            event.preventDefault();
+            this.textContent = this.dataset.previousValue || "";
+            this.blur();
+          }
+        });
+
+        textEl.addEventListener("blur", function () {
+          var currentKey = this.dataset.criteriaEditKey || "";
+          var value = normalizeText(this.textContent);
+
+          if (!value) {
+            value = this.dataset.previousValue || "";
+            this.textContent = value;
+          }
+
+          if (!currentKey) return;
+
+          if (value) {
+            editedCriteria.set(currentKey, value);
+          } else {
+            editedCriteria.delete(currentKey);
+          }
+        });
+      }
+
+      function isEditingEditableText() {
+        var active = document.activeElement;
+        return !!(
+          active &&
+          typeof active.getAttribute === "function" &&
+          active.getAttribute("data-criteria-editable") === "1"
+        );
+      }
+
+      function applySavedText(el, key) {
+        if (!el || !key || !editedCriteria.has(key)) return;
+        if (document.activeElement === el) return;
+        var saved = normalizeText(editedCriteria.get(key));
+        if (!saved) return;
+        if (normalizeText(el.textContent) === saved) return;
+        el.textContent = saved;
+      }
+
+      function makeCriteriaEditable(row, index) {
+        if (!row) return;
+
+        var firstInput = row.querySelector("input, select, textarea");
+        if (!firstInput) return;
+
+        var leafs = collectLeafTextNodes(row, firstInput);
+        if (leafs.length < 2) return;
+
+        var titleEl = leafs[0];
+        var criterionEl = leafs[1];
+        var stableKey = row.dataset.criteriaStableKey || "";
+        if (!stableKey) {
+          stableKey = normalizeText(titleEl.textContent) + "::" + String(index);
+          row.dataset.criteriaStableKey = stableKey;
+        }
+
+        var titleKey = stableKey + "::title";
+        var criterionKey = stableKey + "::criterion";
+
+        titleEl.dataset.criteriaEditKey = titleKey;
+        criterionEl.dataset.criteriaEditKey = criterionKey;
+
+        applySavedText(titleEl, titleKey);
+        applySavedText(criterionEl, criterionKey);
+
+        bindEditableText(titleEl, "Clic para editar item");
+        bindEditableText(criterionEl, "Clic para editar criterio");
+      }
+
+      function refreshCriteriaEditors() {
+        var panel = findSelectedCardRoot();
+        if (!panel) return;
+
+        var rows = getRowCandidates(panel);
+        for (var i = 0; i < rows.length; i += 1) {
+          makeCriteriaEditable(rows[i], i);
+        }
+      }
+
+      function scheduleRefresh() {
+        if (isEditingEditableText()) return;
+        if (refreshTimer) return;
+        refreshTimer = setTimeout(function () {
+          if (isEditingEditableText()) {
+            refreshTimer = null;
+            return;
+          }
+          refreshTimer = null;
+          refreshCriteriaEditors();
+        }, 60);
+      }
+
+      var observerTarget = document.documentElement || document.body;
+      if (observerTarget) {
+        var observer = new MutationObserver(function () {
+          scheduleRefresh();
+        });
+
+        observer.observe(observerTarget, {
+          childList: true,
+          subtree: true,
+          characterData: false,
+          attributes: false,
+        });
+      }
+
+      document.addEventListener("click", function (event) {
+        var target = event && event.target && event.target.closest
+          ? event.target.closest('[data-criteria-editable="1"]')
+          : null;
+        if (target) return;
+        scheduleRefresh();
+      }, true);
+
+      window.addEventListener("load", function () {
+        scheduleRefresh();
+      });
+
+      setTimeout(scheduleRefresh, 300);
+      setTimeout(scheduleRefresh, 900);
     })();
   </script>
 </body>
