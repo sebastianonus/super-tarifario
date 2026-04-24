@@ -4,3 +4,4 @@ build/
 .vercel/
 .DS_Store
 Thumbs.db
+.local-dev*.log
